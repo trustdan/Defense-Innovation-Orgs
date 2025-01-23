@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Defense Innovation Organizations</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .search-container {
+            margin-bottom: 20px;
+            position: sticky;
+            top: 0;
+            background-color: white;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            z-index: 100;
+        }
+        #searchInput {
+            width: 100%;
+            padding: 12px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+            transition: border-color 0.3s ease;
+        }
+        #searchInput:focus {
+            outline: none;
+            border-color: #4a90e2;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            position: sticky;
+            top: 70px;
+        }
+        tr:hover {
+            background-color: #f8f9fa;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-style: italic;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="search-container">
+            <input type="text" id="searchInput" placeholder="Search organizations...">
+        </div>
+        <div id="tableContainer">
+            <div class="loading">Loading data...</div>
+        </div>
+    </div>
+
+    <script>
+        let originalData = [];
+        
+        async function loadData() {
+            try {
+                const response = await fetch('defenseinnovationorgs.csv');
+                const csvText = await response.text();
+                
+                Papa.parse(csvText, {
+                    header: true,
+                    complete: function(results) {
+                        originalData = results.data;
+                        renderTable(originalData);
+                        document.querySelector('.loading').style.display = 'none';
+                    },
+                    error: function(error) {
+                        console.error('Error parsing CSV:', error);
+                        document.querySelector('.loading').textContent = 'Error loading data';
+                    }
+                });
+            } catch (error) {
+                console.error('Error fetching CSV:', error);
+                document.querySelector('.loading').textContent = 'Error loading data';
+            }
+        }
+
+        function renderTable(data) {
+            if (data.length === 0) {
+                document.getElementById('tableContainer').innerHTML = '<p>No matching results found.</p>';
+                return;
+            }
+
+            const headers = Object.keys(data[0]);
+            const tableHTML = `
+                <table>
+                    <thead>
+                        <tr>
+                            ${headers.map(header => `<th>${header}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${data.map(row => `
+                            <tr>
+                                ${headers.map(header => `<td>${row[header] || ''}</td>`).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            document.getElementById('tableContainer').innerHTML = tableHTML;
+        }
+
+        function filterData(searchTerm) {
+            searchTerm = searchTerm.toLowerCase();
+            return originalData.filter(row => 
+                Object.values(row).some(value => 
+                    String(value).toLowerCase().includes(searchTerm)
+                )
+            );
+        }
+
+        document.getElementById('searchInput').addEventListener('input', function(e) {
+            const searchTerm = e.target.value;
+            const filteredData = filterData(searchTerm);
+            renderTable(filteredData);
+        });
+
+        // Initialize the table
+        loadData();
+    </script>
+</body>
+</html>
